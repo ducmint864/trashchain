@@ -18,8 +18,11 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -49,6 +52,7 @@ func initRootCmd(
 		txCommand(),
 		keys.Commands(),
 	)
+	CreateGenesisCommandForRootCmd(rootCmd, txConfig, basicManager, app.DefaultNodeHome, genutilcli.MigrationMap)
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
@@ -184,4 +188,16 @@ func appExport(
 	}
 
 	return bApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
+}
+
+func CreateGenesisCommandForRootCmd(rootCmd *cobra.Command, txConfig client.TxConfig, moduleBasics module.BasicManager, defaultNodeHome string, migrationMap genutiltypes.MigrationMap) {
+	gentxModule := moduleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
+
+	rootCmd.AddCommand(
+		genutilcli.GenTxCmd(moduleBasics, txConfig, banktypes.GenesisBalancesIterator{}, defaultNodeHome, txConfig.SigningContext().ValidatorAddressCodec()),
+		genutilcli.MigrateGenesisCmd(migrationMap),
+		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, defaultNodeHome, gentxModule.GenTxValidator, txConfig.SigningContext().ValidatorAddressCodec()),
+		genutilcli.ValidateGenesisCmd(moduleBasics),
+		genutilcli.AddGenesisAccountCmd(defaultNodeHome, txConfig.SigningContext().AddressCodec()),
+	)
 }
