@@ -1,0 +1,15 @@
+syntax = "proto3";
+package trashchain.trashchain;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "trashchain/x/trashchain/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (amino.name) = "trashchain/x/trashchain/Params";
+  option (gogoproto.equal) = true;
+
+  
+}
